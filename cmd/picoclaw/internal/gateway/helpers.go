@@ -173,6 +173,8 @@ func gatewayCmd(debug bool) error {
 	healthServer := health.NewServer(cfg.Gateway.Host, cfg.Gateway.Port)
 	addr := fmt.Sprintf("%s:%d", cfg.Gateway.Host, cfg.Gateway.Port)
 	channelManager.SetupHTTPServer(addr, healthServer)
+	// Allow external callers (e.g. Antigravity watcher) to send a message to the last channel (e.g. WhatsApp)
+	channelManager.RegisterNotifyHandler(func() string { return stateManager.GetLastChannel() })
 
 	if err := channelManager.StartAll(ctx); err != nil {
 		fmt.Printf("Error starting channels: %v\n", err)

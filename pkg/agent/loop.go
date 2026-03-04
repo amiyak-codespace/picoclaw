@@ -58,7 +58,7 @@ type processOptions struct {
 	NoHistory       bool     // If true, don't load session history (for heartbeat)
 }
 
-const defaultResponse = "I've completed processing but have no response to give. Increase `max_tool_iterations` in config.json."
+const defaultResponse = "I've finished the requested work. If you asked for changes or a new app, they should be done—check the results above or ask me to summarize."
 
 func NewAgentLoop(
 	cfg *config.Config,
@@ -1070,6 +1070,13 @@ func (al *AgentLoop) runLLMIteration(
 
 			// Save tool result message to session
 			agent.Sessions.AddFullMessage(opts.SessionKey, toolResultMsg)
+		}
+
+		// Last-turn nudge: ask the model for a final reply instead of more tool calls
+		if iteration >= agent.MaxIterations-1 {
+			nudge := "[System: This is your last turn. Reply to the user with a brief summary of what was done; do not make more tool calls.]"
+			messages = append(messages, providers.Message{Role: "user", Content: nudge})
+			logger.DebugCF("agent", "Added last-turn nudge for final response", map[string]any{"agent_id": agent.ID})
 		}
 	}
 
