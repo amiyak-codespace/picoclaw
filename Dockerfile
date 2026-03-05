@@ -35,10 +35,7 @@ RUN apk add --no-cache \
     docker-cli \
     nodejs \
     npm \
-    python3 \
-    make \
-    gcc \
-    musl-dev
+    python3
 
 # Copy picoclaw binary
 COPY --from=builder /src/build/picoclaw /usr/local/bin/picoclaw
