@@ -11,13 +11,19 @@ services:
     env_file: .env
     volumes:
       # ✅ Memory & WhatsApp session — stored OUTSIDE repo, never wiped by git/rebuild
-      - /Users/amiyakumar.m/Ws/ai-space/picoclaw_store:/root/.picoclaw
+      # Reason: AI_SPACE_DIR is exported by start.sh so paths work on any machine
+      - ${AI_SPACE_DIR}/picoclaw_store:/root/.picoclaw
       # Dev projects workspace
-      - /Users/amiyakumar.m/Ws/ai-space/ai-engineer:/root/ws/ai-space/ai-engineer
+      - ${AI_SPACE_DIR}/ai-engineer:/root/ws/ai-space/ai-engineer
       # Docker socket so AI can run docker commands
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "18790:18790"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     deploy:
       resources:
         limits:
