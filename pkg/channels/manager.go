@@ -316,6 +316,8 @@ func (m *Manager) SetupHTTPServer(addr string, healthServer *health.Server) {
 // NotifyRequest is the JSON body for POST /notify (e.g. deploy-done notifications).
 type NotifyRequest struct {
 	Message string `json:"message"`
+	Channel string `json:"channel,omitempty"`
+	ChatID  string `json:"chat_id,omitempty"`
 }
 
 // RegisterNotifyHandler registers POST /notify so external callers (e.g. watcher) can
@@ -335,13 +337,17 @@ func (m *Manager) RegisterNotifyHandler(getLastChannel func() string) {
 			http.Error(w, `{"error":"body must be JSON: {\"message\":\"...\"}"}`, http.StatusBadRequest)
 			return
 		}
-		last := getLastChannel()
-		idx := strings.Index(last, ":")
-		if idx <= 0 {
-			http.Error(w, `{"error":"no last channel (user has not sent a message yet)"}`, http.StatusBadRequest)
-			return
+		channel := strings.TrimSpace(req.Channel)
+		chatID := strings.TrimSpace(req.ChatID)
+		if channel == "" || chatID == "" {
+			last := getLastChannel()
+			idx := strings.Index(last, ":")
+			if idx <= 0 {
+				http.Error(w, `{"error":"no last channel (user has not sent a message yet)"}`, http.StatusBadRequest)
+				return
+			}
+			channel, chatID = last[:idx], last[idx+1:]
 		}
-		channel, chatID := last[:idx], last[idx+1:]
 		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 		defer cancel()
 		if err := m.bus.PublishOutbound(ctx, bus.OutboundMessage{Channel: channel, ChatID: chatID, Content: strings.TrimSpace(req.Message)}); err != nil {
