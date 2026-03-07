@@ -1,7 +1,7 @@
 # ============================================================
 # Stage 1: Build picoclaw with WhatsApp native support
 # ============================================================
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25.7-alpine AS builder
 
 RUN apk add --no-cache git make gcc musl-dev
 
