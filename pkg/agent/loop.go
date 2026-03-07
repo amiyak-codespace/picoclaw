@@ -745,6 +745,7 @@ func (al *AgentLoop) runLLMIteration(
 
 		// Build tool definitions
 		providerToolDefs := agent.Tools.ToProviderDefs()
+		redactedMessages := redactMessagesForLLM(messages)
 
 		// Log LLM request details
 		logger.DebugCF("agent", "LLM request",
@@ -763,7 +764,7 @@ func (al *AgentLoop) runLLMIteration(
 		logger.DebugCF("agent", "Full LLM request",
 			map[string]any{
 				"iteration":     iteration,
-				"messages_json": formatMessagesForLog(messages),
+				"messages_json": formatMessagesForLog(redactedMessages),
 				"tools_json":    formatToolsForLog(providerToolDefs),
 			})
 
@@ -772,6 +773,7 @@ func (al *AgentLoop) runLLMIteration(
 		var err error
 
 		callLLM := func() (*providers.LLMResponse, error) {
+			redactedMessages := redactMessagesForLLM(messages)
 			if len(agent.Candidates) > 1 && al.fallback != nil {
 				fbResult, fbErr := al.fallback.Execute(
 					ctx,
@@ -779,7 +781,7 @@ func (al *AgentLoop) runLLMIteration(
 					func(ctx context.Context, provider, model string) (*providers.LLMResponse, error) {
 						return agent.Provider.Chat(
 							ctx,
-							messages,
+							redactedMessages,
 							providerToolDefs,
 							model,
 							map[string]any{
@@ -803,7 +805,7 @@ func (al *AgentLoop) runLLMIteration(
 				}
 				return fbResult.Response, nil
 			}
-			return agent.Provider.Chat(ctx, messages, providerToolDefs, agent.Model, map[string]any{
+			return agent.Provider.Chat(ctx, redactedMessages, providerToolDefs, agent.Model, map[string]any{
 				"max_tokens":       agent.MaxTokens,
 				"temperature":      agent.Temperature,
 				"prompt_cache_key": agent.ID,
@@ -1314,7 +1316,7 @@ func (al *AgentLoop) summarizeSession(agent *AgentInstance, sessionKey string) {
 		)
 		resp, err := agent.Provider.Chat(
 			ctx,
-			[]providers.Message{{Role: "user", Content: mergePrompt}},
+			redactMessagesForLLM([]providers.Message{{Role: "user", Content: mergePrompt}}),
 			nil,
 			agent.Model,
 			map[string]any{
@@ -1367,7 +1369,7 @@ func (al *AgentLoop) summarizeBatch(
 
 	response, err := agent.Provider.Chat(
 		ctx,
-		[]providers.Message{{Role: "user", Content: prompt}},
+		redactMessagesForLLM([]providers.Message{{Role: "user", Content: prompt}}),
 		nil,
 		agent.Model,
 		map[string]any{
