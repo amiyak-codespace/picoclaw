@@ -323,14 +323,12 @@ func serializeMessages(messages []Message) []any {
 			})
 		}
 		for _, mediaURL := range m.Media {
-			if strings.HasPrefix(mediaURL, "data:image/") {
-				parts = append(parts, map[string]any{
-					"type": "image_url",
-					"image_url": map[string]any{
-						"url": mediaURL,
-					},
-				})
-			}
+			parts = append(parts, map[string]any{
+				"type": "image_url",
+				"image_url": map[string]any{
+					"url": mediaURL,
+				},
+			})
 		}
 
 		msg := map[string]any{
@@ -363,7 +361,7 @@ func normalizeModel(model, apiBase string) string {
 
 	prefix := strings.ToLower(before)
 	switch prefix {
-	case "litellm", "moonshot", "nvidia", "groq", "ollama", "deepseek", "google", "openrouter", "zhipu", "mistral":
+	case "litellm", "moonshot", "nvidia", "groq", "ollama", "deepseek", "google", "gemini", "openrouter", "zhipu", "mistral":
 		return after
 	default:
 		return model

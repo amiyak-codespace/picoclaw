@@ -36,7 +36,6 @@ import (
 	"github.com/sipeed/picoclaw/pkg/providers"
 	"github.com/sipeed/picoclaw/pkg/state"
 	"github.com/sipeed/picoclaw/pkg/tools"
-	"github.com/sipeed/picoclaw/pkg/voice"
 )
 
 func gatewayCmd(debug bool) error {
@@ -135,12 +134,6 @@ func gatewayCmd(debug bool) error {
 	agentLoop.SetChannelManager(channelManager)
 	agentLoop.SetMediaStore(mediaStore)
 
-	// Wire up voice transcription if a supported provider is configured.
-	if transcriber := voice.DetectTranscriber(cfg); transcriber != nil {
-		agentLoop.SetTranscriber(transcriber)
-		logger.InfoCF("voice", "Transcription enabled (agent-level)", map[string]any{"provider": transcriber.Name()})
-	}
-
 	enabledChannels := channelManager.GetEnabledChannels()
 	if len(enabledChannels) > 0 {
 		fmt.Printf("✓ Channels enabled: %s\n", enabledChannels)
@@ -180,6 +173,8 @@ func gatewayCmd(debug bool) error {
 	healthServer := health.NewServer(cfg.Gateway.Host, cfg.Gateway.Port)
 	addr := fmt.Sprintf("%s:%d", cfg.Gateway.Host, cfg.Gateway.Port)
 	channelManager.SetupHTTPServer(addr, healthServer)
+	// Allow external callers (e.g. Antigravity watcher) to send a message to the last channel (e.g. WhatsApp)
+	channelManager.RegisterNotifyHandler(func() string { return stateManager.GetLastChannel() })
 
 	if err := channelManager.StartAll(ctx); err != nil {
 		fmt.Printf("Error starting channels: %v\n", err)
@@ -230,25 +225,19 @@ func setupCronTool(
 	// Create cron service
 	cronService := cron.NewCronService(cronStorePath, nil)
 
-	// Create and register CronTool if enabled
-	var cronTool *tools.CronTool
-	if cfg.Tools.IsToolEnabled("cron") {
-		var err error
-		cronTool, err = tools.NewCronTool(cronService, agentLoop, msgBus, workspace, restrict, execTimeout, cfg)
-		if err != nil {
-			log.Fatalf("Critical error during CronTool initialization: %v", err)
-		}
-
-		agentLoop.RegisterTool(cronTool)
+	// Create and register CronTool
+	cronTool, err := tools.NewCronTool(cronService, agentLoop, msgBus, workspace, restrict, execTimeout, cfg)
+	if err != nil {
+		log.Fatalf("Critical error during CronTool initialization: %v", err)
 	}
 
-	// Set onJob handler
-	if cronTool != nil {
-		cronService.SetOnJob(func(job *cron.CronJob) (string, error) {
-			result := cronTool.ExecuteJob(context.Background(), job)
-			return result, nil
-		})
-	}
+	agentLoop.RegisterTool(cronTool)
+
+	// Set the onJob handler
+	cronService.SetOnJob(func(job *cron.CronJob) (string, error) {
+		result := cronTool.ExecuteJob(context.Background(), job)
+		return result, nil
+	})
 
 	return cronService
 }
