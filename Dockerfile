@@ -22,9 +22,11 @@ RUN CGO_ENABLED=0 go generate ./... && \
       ./cmd/picoclaw
 
 # ============================================================
-# Stage 2: Runtime image with tools for full-stack development
+# Stage 2: Runtime image
 # ============================================================
 FROM alpine:3.21
+
+ARG INCLUDE_NATIVE_BUILD_TOOLS=false
 
 RUN apk add --no-cache \
     ca-certificates \
@@ -36,9 +38,11 @@ RUN apk add --no-cache \
     nodejs \
     npm \
     python3 \
-    make \
-    gcc \
-    musl-dev
+    make
+
+RUN if [ "$INCLUDE_NATIVE_BUILD_TOOLS" = "true" ]; then \
+      apk add --no-cache gcc musl-dev; \
+    fi
 
 # Copy picoclaw binary
 COPY --from=builder /src/build/picoclaw /usr/local/bin/picoclaw
