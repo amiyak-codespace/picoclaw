@@ -480,8 +480,8 @@ func (al *AgentLoop) processMessage(ctx context.Context, msg bus.InboundMessage)
 
 	// Reset message-tool state for this round so we don't skip publishing due to a previous round.
 	if tool, ok := agent.Tools.Get("message"); ok {
-		if mt, ok := tool.(tools.ContextualTool); ok {
-			mt.SetContext(msg.Channel, msg.ChatID)
+		if mt, ok := tool.(*tools.MessageTool); ok {
+			mt.ResetSentInRound()
 		}
 	}
 
