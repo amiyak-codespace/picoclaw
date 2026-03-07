@@ -9,6 +9,8 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     env_file: .env
+    environment:
+      - SSH_KEY=/run/secrets/apps-magic-ec2.pem
     volumes:
       # ✅ Memory & WhatsApp session — stored OUTSIDE repo, never wiped by git/rebuild
       # Reason: AI_SPACE_DIR is exported by start.sh so paths work on any machine
@@ -17,6 +19,8 @@ services:
       - ${AI_SPACE_DIR}/ai-engineer:/root/ws/ai-space/ai-engineer
       # Docker socket so AI can run docker commands
       - /var/run/docker.sock:/var/run/docker.sock
+      # EC2 SSH key mounted read-only for ops scripts
+      - /home/ubuntu/.ssh/apps-magic-ec2.pem:/run/secrets/apps-magic-ec2.pem:ro
     ports:
       - "18790:18790"
     logging:
