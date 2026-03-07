@@ -25,6 +25,8 @@ services:
       - /home/ubuntu/.ssh/apps-magic-ec2.pem:/run/secrets/apps-magic-ec2.pem:ro
       # Pinned known_hosts for secure SSH host verification
       - /home/ubuntu/.ssh/known_hosts:/root/.ssh/known_hosts:ro
+      # GitHub CLI auth config (read-only) for repo PR operations
+      - /home/ubuntu/.config/gh:/root/.config/gh:ro
     ports:
       - "18790:18790"
     logging:
