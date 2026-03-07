@@ -32,6 +32,7 @@ RUN apk add --no-cache \
     ca-certificates \
     tzdata \
     curl \
+    openssh-client \
     bash \
     git \
     docker-cli \

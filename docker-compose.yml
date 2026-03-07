@@ -11,6 +11,8 @@ services:
     env_file: .env
     environment:
       - SSH_KEY=/run/secrets/apps-magic-ec2.pem
+      - EC2_HOST=ubuntu@44.204.150.112
+      - EC2_PUBLIC_IP=44.204.150.112
     volumes:
       # ✅ Memory & WhatsApp session — stored OUTSIDE repo, never wiped by git/rebuild
       # Reason: AI_SPACE_DIR is exported by start.sh so paths work on any machine
@@ -21,6 +23,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       # EC2 SSH key mounted read-only for ops scripts
       - /home/ubuntu/.ssh/apps-magic-ec2.pem:/run/secrets/apps-magic-ec2.pem:ro
+      # Pinned known_hosts for secure SSH host verification
+      - /home/ubuntu/.ssh/known_hosts:/root/.ssh/known_hosts:ro
     ports:
       - "18790:18790"
     logging:
