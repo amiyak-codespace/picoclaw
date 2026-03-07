@@ -68,6 +68,13 @@ git reset --hard origin/main
 AI_SPACE_DIR=/home/ubuntu/Ws/ai-space docker compose up -d --build picoclaw
 ```
 
+Preferred wrapper (always sync skills+memory first):
+
+```bash
+cd /home/ubuntu/Ws/ai-space/picoclaw
+AI_SPACE_DIR=/home/ubuntu/Ws/ai-space ./scripts/deploy_picoclaw_with_context.sh
+```
+
 ## 6) Fast Deploy Fallback (Build Local, Copy Image)
 
 Use when EC2 build fails or is too slow.
@@ -99,6 +106,14 @@ ssh -i /Users/amiyakumar.m/Ws/ssh/apps-magic-ec2.pem ubuntu@44.204.150.112 '
   cd /home/ubuntu/Ws/ai-space/picoclaw && \
   AI_SPACE_DIR=/home/ubuntu/Ws/ai-space docker compose up -d --no-build --force-recreate picoclaw
 '
+```
+
+If using `--no-build`, run context sync first:
+
+```bash
+cd /home/ubuntu/Ws/ai-space/picoclaw
+AI_SPACE_DIR=/home/ubuntu/Ws/ai-space ./scripts/sync_ai_space_context.sh
+AI_SPACE_DIR=/home/ubuntu/Ws/ai-space docker compose up -d --no-build --force-recreate picoclaw
 ```
 
 ## 7) Post-Deploy Verification Checklist
