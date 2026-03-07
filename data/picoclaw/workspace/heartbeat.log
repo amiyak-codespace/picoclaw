@@ -1,0 +1,23 @@
+[2026-03-04 10:14:05] [INFO] Created default HEARTBEAT.md template
+[2026-03-04 10:18:21] [INFO] Resolved channel: , chatID:  (from lastChannel: )
+[2026-03-04 10:18:24] [ERROR] Heartbeat error: Heartbeat error: LLM call failed after retries: API request failed:
+  Status: 404
+  Body:   [{
+  "error": {
+    "code": 404,
+    "message": "models/gemini-2.0-flash-exp is not found for API version v1main, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.",
+    "status": "NOT_FOUND"
+  }
+}
+]
+[2026-03-04 10:20:51] [INFO] Resolved channel: , chatID:  (from lastChannel: )
+[2026-03-04 10:20:54] [ERROR] Heartbeat error: Heartbeat error: LLM call failed after retries: API request failed:
+  Status: 403
+  Body:   [{
+  "error": {
+    "code": 403,
+    "message": "Your API key was reported as leaked. Please use another API key.",
+    "status": "PERMISSION_DENIED"
+  }
+}
+]

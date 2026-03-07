@@ -346,6 +346,17 @@ func (c *WhatsAppNativeChannel) handleIncoming(evt *events.Message) {
 	}
 	senderID := evt.Info.Sender.String()
 	chatID := evt.Info.Chat.String()
+
+	// Safety gate: process only owner self-chat style direct messages.
+	// - Ignore all group traffic.
+	// - Ignore direct chats where sender != chat (outgoing 1:1 or relayed contexts).
+	if evt.Info.Chat.Server == types.GroupServer {
+		return
+	}
+	if senderID != chatID {
+		return
+	}
+
 	content := evt.Message.GetConversation()
 	if content == "" && evt.Message.ExtendedTextMessage != nil {
 		content = evt.Message.ExtendedTextMessage.GetText()
