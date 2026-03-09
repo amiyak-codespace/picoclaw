@@ -8,10 +8,12 @@ package channels
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -309,6 +311,54 @@ func (m *Manager) SetupHTTPServer(addr string, healthServer *health.Server) {
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
+}
+
+// NotifyRequest is the JSON body for POST /notify (e.g. deploy-done notifications).
+type NotifyRequest struct {
+	Message string `json:"message"`
+	Channel string `json:"channel,omitempty"`
+	ChatID  string `json:"chat_id,omitempty"`
+}
+
+// RegisterNotifyHandler registers POST /notify so external callers (e.g. watcher) can
+// send a message to the last active channel (e.g. WhatsApp). getLastChannel should return
+// "channel:chatID" (e.g. "whatsapp_native:181883325423728@lid").
+func (m *Manager) RegisterNotifyHandler(getLastChannel func() string) {
+	if m.mux == nil {
+		return
+	}
+	m.mux.HandleFunc("/notify", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var req NotifyRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.Message) == "" {
+			http.Error(w, `{"error":"body must be JSON: {\"message\":\"...\"}"}`, http.StatusBadRequest)
+			return
+		}
+		channel := strings.TrimSpace(req.Channel)
+		chatID := strings.TrimSpace(req.ChatID)
+		if channel == "" || chatID == "" {
+			last := getLastChannel()
+			idx := strings.Index(last, ":")
+			if idx <= 0 {
+				http.Error(w, `{"error":"no last channel (user has not sent a message yet)"}`, http.StatusBadRequest)
+				return
+			}
+			channel, chatID = last[:idx], last[idx+1:]
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+		if err := m.bus.PublishOutbound(ctx, bus.OutboundMessage{Channel: channel, ChatID: chatID, Content: strings.TrimSpace(req.Message)}); err != nil {
+			logger.WarnCF("channels", "notify publish failed", map[string]any{"error": err.Error()})
+			http.Error(w, `{"error":"failed to send"}`, http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"status": "sent"})
+	})
 }
 
 func (m *Manager) StartAll(ctx context.Context) error {

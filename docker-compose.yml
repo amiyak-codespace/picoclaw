@@ -1,0 +1,40 @@
+services:
+  picoclaw:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: picoclaw
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    env_file: .env
+    environment:
+      - SSH_KEY=/run/secrets/apps-magic-ec2.pem
+      - EC2_HOST=ubuntu@44.204.150.112
+      - EC2_PUBLIC_IP=44.204.150.112
+    volumes:
+      # ✅ Memory & WhatsApp session — stored OUTSIDE repo, never wiped by git/rebuild
+      # Reason: AI_SPACE_DIR is exported by start.sh so paths work on any machine
+      - ${AI_SPACE_DIR}/picoclaw_store:/root/.picoclaw
+      # Dev projects workspace
+      - ${AI_SPACE_DIR}/ai-engineer:/root/ws/ai-space/ai-engineer
+      # Docker socket so AI can run docker commands
+      - /var/run/docker.sock:/var/run/docker.sock
+      # EC2 SSH key mounted read-only for ops scripts
+      - /home/ubuntu/.ssh/apps-magic-ec2.pem:/run/secrets/apps-magic-ec2.pem:ro
+      # Pinned known_hosts for secure SSH host verification
+      - /home/ubuntu/.ssh/known_hosts:/root/.ssh/known_hosts:ro
+      # GitHub CLI auth config (read-only) for repo PR operations
+      - /home/ubuntu/.config/gh:/root/.config/gh:ro
+    ports:
+      - "18790:18790"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 2g

@@ -10,6 +10,12 @@ type Tool interface {
 	Execute(ctx context.Context, args map[string]any) *ToolResult
 }
 
+// ContextualTool is implemented by tools that need channel/chat metadata.
+type ContextualTool interface {
+	Tool
+	SetContext(channel, chatID string)
+}
+
 // --- Request-scoped tool context (channel / chatID) ---
 //
 // Carried via context.Value so that concurrent tool calls each receive

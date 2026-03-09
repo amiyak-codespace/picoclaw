@@ -52,7 +52,7 @@ func (t *CronTool) Name() string {
 
 // Description returns the tool description
 func (t *CronTool) Description() string {
-	return "Schedule reminders, tasks, or system commands. IMPORTANT: When user asks to be reminded or scheduled, you MUST call this tool. Use 'at_seconds' for one-time reminders (e.g., 'remind me in 10 minutes' → at_seconds=600). Use 'every_seconds' ONLY for recurring tasks (e.g., 'every 2 hours' → every_seconds=7200). Use 'cron_expr' for complex recurring schedules. Use 'command' to execute shell commands directly."
+	return "Schedule reminders, tasks, or system commands. IMPORTANT: When user asks to be reminded or scheduled, you MUST call this tool. Use 'at_seconds' for one-time reminders (e.g., 'remind me in 10 minutes' → at_seconds=600). Use 'every_seconds' ONLY for recurring tasks (e.g., 'every 2 hours' → every_seconds=7200). Use 'cron_expr' for complex recurring schedules. Use 'command' to execute shell commands directly. For scheduling to someone else (or a group), always set target_channel + target_chat_id explicitly."
 }
 
 // Parameters returns the tool parameters schema
@@ -93,6 +93,14 @@ func (t *CronTool) Parameters() map[string]any {
 				"type":        "boolean",
 				"description": "If true, send message directly to channel. If false, let agent process message (for complex tasks). Default: true",
 			},
+			"target_channel": map[string]any{
+				"type":        "string",
+				"description": "Optional override target channel for delivery (e.g. whatsapp_native).",
+			},
+			"target_chat_id": map[string]any{
+				"type":        "string",
+				"description": "Optional override target chat ID for delivery (person or group). Use this when scheduling for someone else.",
+			},
 		},
 		"required": []string{"action"},
 	}
@@ -127,6 +135,12 @@ func (t *CronTool) addJob(ctx context.Context, args map[string]any) *ToolResult 
 
 	if channel == "" || chatID == "" {
 		return ErrorResult("no session context (channel/chat_id not set). Use this tool in an active conversation.")
+	}
+	if tc, ok := args["target_channel"].(string); ok && strings.TrimSpace(tc) != "" {
+		channel = strings.TrimSpace(tc)
+	}
+	if to, ok := args["target_chat_id"].(string); ok && strings.TrimSpace(to) != "" {
+		chatID = strings.TrimSpace(to)
 	}
 
 	message, ok := args["message"].(string)
