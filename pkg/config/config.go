@@ -729,6 +729,10 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, err
 	}
 
+	// Resolve ${ENV_VAR} placeholders in model_list fields so API keys can stay
+	// out of config.json and be injected at runtime via environment variables.
+	resolveModelListEnvVars(cfg)
+
 	// Migrate legacy channel config fields to new unified structures
 	cfg.migrateChannelConfigs()
 
@@ -743,6 +747,18 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func resolveModelListEnvVars(cfg *Config) {
+	if cfg == nil {
+		return
+	}
+	for i := range cfg.ModelList {
+		cfg.ModelList[i].APIKey = os.ExpandEnv(cfg.ModelList[i].APIKey)
+		cfg.ModelList[i].APIBase = os.ExpandEnv(cfg.ModelList[i].APIBase)
+		cfg.ModelList[i].Proxy = os.ExpandEnv(cfg.ModelList[i].Proxy)
+		cfg.ModelList[i].Workspace = os.ExpandEnv(cfg.ModelList[i].Workspace)
+	}
 }
 
 func (c *Config) migrateChannelConfigs() {
