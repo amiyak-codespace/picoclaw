@@ -58,7 +58,25 @@ type processOptions struct {
 	NoHistory       bool     // If true, don't load session history (for heartbeat)
 }
 
-const defaultResponse = "I've finished the requested work. If you asked for changes or a new app, they should be done—check the results above or ask me to summarize."
+const legacyGenericCompletionReply = "I've finished the requested work. If you asked for changes or a new app, they should be done—check the results above or ask me to summarize."
+const defaultResponse = "🔴 Task was not queued yet. Retrying queue now."
+
+func isBuildApprovalMessage(msg string) bool {
+	m := strings.TrimSpace(strings.ToLower(msg))
+	return m == "build" || m == "proceed" || m == "go ahead" || m == "start build"
+}
+
+func sanitizeFallbackReply(userMsg, reply string) string {
+	trimmed := strings.TrimSpace(reply)
+	// Block the known bad generic completion reply for all channels/flows.
+	if strings.EqualFold(trimmed, legacyGenericCompletionReply) {
+		if isBuildApprovalMessage(userMsg) {
+			return "🔴 Task was not queued yet. Retrying queue now."
+		}
+		return "🟡 I need to verify execution status. Please ask: `task update`."
+	}
+	return reply
+}
 
 func NewAgentLoop(
 	cfg *config.Config,
@@ -635,6 +653,7 @@ func (al *AgentLoop) runAgentLoop(
 	if finalContent == "" {
 		finalContent = opts.DefaultResponse
 	}
+	finalContent = sanitizeFallbackReply(opts.UserMessage, finalContent)
 
 	// 6. Save final assistant message to session
 	agent.Sessions.AddMessage(opts.SessionKey, "assistant", finalContent)
