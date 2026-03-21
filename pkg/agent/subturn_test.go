@@ -434,15 +434,9 @@ func TestHardAbortCascading(t *testing.T) {
 	childCtx, childCancel := context.WithCancel(rootTS.ctx)
 	defer childCancel()
 	childTS := &turnState{
-		ctx:            childCtx,
-		cancelFunc:     childCancel,
-		turnID:         "child-1",
-		parentTurnID:   sessionKey,
-		depth:          1,
-		session:        &ephemeralSessionStore{},
-		pendingResults: make(chan *tools.ToolResult, 16),
-		concurrencySem: make(chan struct{}, 5),
+		ctx: childCtx,
 	}
+	_ = childCancel
 
 	// Attach cancelFunc to rootTS so Finish() can trigger it
 	rootTS.cancelFunc = parentCancel
@@ -1556,29 +1550,17 @@ func TestGrandchildAbort_CascadingCancellation(t *testing.T) {
 	parentCtx, parentCancel := context.WithCancel(grandparentTS.ctx)
 	defer parentCancel()
 	parentTS := &turnState{
-		ctx:            parentCtx,
-		turnID:         "parent",
-		parentTurnID:   "grandparent",
-		depth:          1,
-		session:        newEphemeralSession(nil),
-		pendingResults: make(chan *tools.ToolResult, 16),
-		concurrencySem: make(chan struct{}, testMaxConcurrentSubTurns),
+		ctx: parentCtx,
 	}
-	parentTS.cancelFunc = parentCancel
+	_ = parentCancel
 
 	// Create grandchild turn (depth 2) as child of parent
 	childCtx, childCancel := context.WithCancel(parentTS.ctx)
 	defer childCancel()
 	childTS := &turnState{
-		ctx:            childCtx,
-		turnID:         "grandchild",
-		parentTurnID:   "parent",
-		depth:          2,
-		session:        newEphemeralSession(nil),
-		pendingResults: make(chan *tools.ToolResult, 16),
-		concurrencySem: make(chan struct{}, testMaxConcurrentSubTurns),
+		ctx: childCtx,
 	}
-	childTS.cancelFunc = childCancel
+	_ = childCancel
 
 	// Verify all contexts are active
 	select {

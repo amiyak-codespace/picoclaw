@@ -147,7 +147,11 @@ func (sm *SubagentManager) Spawn(
 	return fmt.Sprintf("Spawned subagent for task: %s", task), nil
 }
 
-func (sm *SubagentManager) runTask(ctx context.Context, task *SubagentTask, callback AsyncCallback) {
+func (sm *SubagentManager) runTask(
+	ctx context.Context,
+	task *SubagentTask,
+	callback AsyncCallback,
+) {
 	task.Status = "running"
 	task.Created = time.Now().UnixMilli()
 
@@ -176,7 +180,17 @@ func (sm *SubagentManager) runTask(ctx context.Context, task *SubagentTask, call
 	var err error
 
 	if spawner != nil {
-		result, err = spawner(ctx, task.Task, task.Label, task.AgentID, tools, maxTokens, temperature, hasMaxTokens, hasTemperature)
+		result, err = spawner(
+			ctx,
+			task.Task,
+			task.Label,
+			task.AgentID,
+			tools,
+			maxTokens,
+			temperature,
+			hasMaxTokens,
+			hasTemperature,
+		)
 	} else {
 		// Fallback to legacy RunToolLoop
 		systemPrompt := `You are a subagent. Complete the given task independently and report the result.
@@ -357,14 +371,21 @@ func (t *SubagentTool) Execute(ctx context.Context, args map[string]any) *ToolRe
 	label, _ := args["label"].(string)
 
 	// Build system prompt for subagent
-	systemPrompt := fmt.Sprintf(`You are a subagent. Complete the given task independently and provide a clear, concise result.
+	systemPrompt := fmt.Sprintf(
+		`You are a subagent. Complete the given task independently and provide a clear, concise result.
 
-Task: %s`, task)
+Task: %s`,
+		task,
+	)
 
 	if label != "" {
-		systemPrompt = fmt.Sprintf(`You are a subagent labeled "%s". Complete the given task independently and provide a clear, concise result.
+		systemPrompt = fmt.Sprintf(
+			`You are a subagent labeled "%s". Complete the given task independently and provide a clear, concise result.
 
-Task: %s`, label, task)
+Task: %s`,
+			label,
+			task,
+		)
 	}
 
 	// Use spawner if available (direct SpawnSubTurn call)
@@ -377,7 +398,6 @@ Task: %s`, label, task)
 			Temperature:  t.temperature,
 			Async:        false, // Synchronous execution
 		})
-
 		if err != nil {
 			return ErrorResult(fmt.Sprintf("Subagent execution failed: %v", err)).WithError(err)
 		}

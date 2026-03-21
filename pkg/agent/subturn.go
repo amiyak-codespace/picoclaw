@@ -138,11 +138,11 @@ type SubTurnConfig struct {
 	//   - Critical=false: SubTurn exits gracefully without error
 	//
 	// When parent finishes with hard abort (Finish(true)):
-	//   - All SubTurns are cancelled regardless of Critical flag
+	//   - All SubTurns are canceled regardless of Critical flag
 	Critical bool
 
 	// Timeout is the maximum duration for this SubTurn.
-	// If the SubTurn runs longer than this, it will be cancelled.
+	// If the SubTurn runs longer than this, it will be canceled.
 	// Default is 5 minutes (defaultSubTurnTimeout) if not specified.
 	Timeout time.Duration
 
@@ -177,6 +177,8 @@ type SubTurnConfig struct {
 }
 
 // ====================== Sub-turn Events (Aligned with EventBus) ======================
+
+// SubTurnSpawnEvent is emitted when a child sub-turn is started.
 type SubTurnSpawnEvent struct {
 	ParentID string
 	ChildID  string
@@ -232,10 +234,15 @@ type AgentLoopSpawner struct {
 }
 
 // SpawnSubTurn implements tools.SubTurnSpawner interface.
-func (s *AgentLoopSpawner) SpawnSubTurn(ctx context.Context, cfg tools.SubTurnConfig) (*tools.ToolResult, error) {
+func (s *AgentLoopSpawner) SpawnSubTurn(
+	ctx context.Context,
+	cfg tools.SubTurnConfig,
+) (*tools.ToolResult, error) {
 	parentTS := turnStateFromContext(ctx)
 	if parentTS == nil {
-		return nil, errors.New("parent turnState not found in context - cannot spawn sub-turn outside of a turn")
+		return nil, errors.New(
+			"parent turnState not found in context - cannot spawn sub-turn outside of a turn",
+		)
 	}
 
 	// Convert tools.SubTurnConfig to agent.SubTurnConfig
@@ -266,18 +273,27 @@ func NewSubTurnSpawner(al *AgentLoop) *AgentLoopSpawner {
 func SpawnSubTurn(ctx context.Context, cfg SubTurnConfig) (*tools.ToolResult, error) {
 	al := AgentLoopFromContext(ctx)
 	if al == nil {
-		return nil, errors.New("AgentLoop not found in context - ensure context is properly initialized")
+		return nil, errors.New(
+			"AgentLoop not found in context - ensure context is properly initialized",
+		)
 	}
 
 	parentTS := turnStateFromContext(ctx)
 	if parentTS == nil {
-		return nil, errors.New("parent turnState not found in context - cannot spawn sub-turn outside of a turn")
+		return nil, errors.New(
+			"parent turnState not found in context - cannot spawn sub-turn outside of a turn",
+		)
 	}
 
 	return spawnSubTurn(ctx, al, parentTS, cfg)
 }
 
-func spawnSubTurn(ctx context.Context, al *AgentLoop, parentTS *turnState, cfg SubTurnConfig) (result *tools.ToolResult, err error) {
+func spawnSubTurn(
+	ctx context.Context,
+	al *AgentLoop,
+	parentTS *turnState,
+	cfg SubTurnConfig,
+) (result *tools.ToolResult, err error) {
 	// Get effective SubTurn configuration
 	rtCfg := al.getSubTurnConfig()
 
@@ -512,7 +528,12 @@ func deliverSubTurnResult(parentTS *turnState, childID string, result *tools.Too
 //   - Injects recovery prompt asking for shorter response
 //   - Retries up to 2 times
 //   - Handles cases where max_tokens is hit
-func runTurn(ctx context.Context, al *AgentLoop, ts *turnState, cfg SubTurnConfig) (*tools.ToolResult, error) {
+func runTurn(
+	ctx context.Context,
+	al *AgentLoop,
+	ts *turnState,
+	cfg SubTurnConfig,
+) (*tools.ToolResult, error) {
 	// Derive candidates from the requested model using the parent loop's provider.
 	defaultProvider := al.GetConfig().Agents.Defaults.Provider
 	candidates := providers.ResolveCandidates(
@@ -639,7 +660,11 @@ func runTurn(ctx context.Context, al *AgentLoop, ts *turnState, cfg SubTurnConfi
 						"retries":     contextRetryCount,
 						"max_retries": maxContextRetries,
 					})
-				return nil, fmt.Errorf("context limit exceeded after %d retries: %w", maxContextRetries, err)
+				return nil, fmt.Errorf(
+					"context limit exceeded after %d retries: %w",
+					maxContextRetries,
+					err,
+				)
 			}
 
 			logger.WarnCF("subturn", "Context length exceeded, compressing and retrying",

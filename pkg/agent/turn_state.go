@@ -165,7 +165,16 @@ func (al *AgentLoop) FormatTree(turnInfo *TurnInfo, prefix string, isLast bool) 
 		orphanMarker = " (Orphaned)"
 	}
 
-	fmt.Fprintf(&sb, "%s%s[%s] Depth:%d (%s)%s\n", prefix, marker, turnInfo.TurnID, turnInfo.Depth, status, orphanMarker)
+	fmt.Fprintf(
+		&sb,
+		"%s%s[%s] Depth:%d (%s)%s\n",
+		prefix,
+		marker,
+		turnInfo.TurnID,
+		turnInfo.Depth,
+		status,
+		orphanMarker,
+	)
 
 	// Prepare prefix for children
 	childPrefix := prefix

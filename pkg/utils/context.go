@@ -65,7 +65,7 @@ func MeasureContextRunes(messages []providers.Message) int {
 				totalRunes += utf8.RuneCountInString(tc.Name)
 				// Arguments: serialize and count
 				if argsJSON, err := json.Marshal(tc.Arguments); err == nil {
-					totalRunes += utf8.RuneCountInString(string(argsJSON))
+					totalRunes += utf8.RuneCount(argsJSON)
 				} else {
 					// Fallback estimate if serialization fails
 					totalRunes += 100
@@ -136,7 +136,7 @@ func TruncateContextSmart(messages []providers.Message, maxRunes int) []provider
 			for _, tc := range msg.ToolCalls {
 				msgRunes += utf8.RuneCountInString(tc.Name)
 				if argsJSON, err := json.Marshal(tc.Arguments); err == nil {
-					msgRunes += utf8.RuneCountInString(string(argsJSON))
+					msgRunes += utf8.RuneCount(argsJSON)
 				} else {
 					msgRunes += 100
 				}

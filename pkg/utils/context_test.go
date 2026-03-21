@@ -156,7 +156,7 @@ func TestMeasureContextRunes(t *testing.T) {
 		{
 			name: "unicode characters",
 			messages: []providers.Message{
-				{Role: "user", Content: "你好世界"}, // 4 Chinese characters
+				{Role: "user", Content: "\u4f60\u597d\u4e16\u754c"}, // 4 Chinese characters
 			},
 			want: 4,
 		},

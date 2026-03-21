@@ -72,11 +72,19 @@ func (t *SpawnTool) Execute(ctx context.Context, args map[string]any) *ToolResul
 
 // ExecuteAsync implements AsyncExecutor. The callback is passed through to the
 // subagent manager as a call parameter — never stored on the SpawnTool instance.
-func (t *SpawnTool) ExecuteAsync(ctx context.Context, args map[string]any, cb AsyncCallback) *ToolResult {
+func (t *SpawnTool) ExecuteAsync(
+	ctx context.Context,
+	args map[string]any,
+	cb AsyncCallback,
+) *ToolResult {
 	return t.execute(ctx, args, cb)
 }
 
-func (t *SpawnTool) execute(ctx context.Context, args map[string]any, cb AsyncCallback) *ToolResult {
+func (t *SpawnTool) execute(
+	ctx context.Context,
+	args map[string]any,
+	cb AsyncCallback,
+) *ToolResult {
 	task, ok := args["task"].(string)
 	if !ok || strings.TrimSpace(task) == "" {
 		return ErrorResult("task is required and must be a non-empty string")
@@ -93,14 +101,21 @@ func (t *SpawnTool) execute(ctx context.Context, args map[string]any, cb AsyncCa
 	}
 
 	// Build system prompt for spawned subagent
-	systemPrompt := fmt.Sprintf(`You are a spawned subagent running in the background. Complete the given task independently and report back when done.
+	systemPrompt := fmt.Sprintf(
+		`You are a spawned subagent running in the background. Complete the given task independently and report back when done.
 
-Task: %s`, task)
+Task: %s`,
+		task,
+	)
 
 	if label != "" {
-		systemPrompt = fmt.Sprintf(`You are a spawned subagent labeled "%s" running in the background. Complete the given task independently and report back when done.
+		systemPrompt = fmt.Sprintf(
+			`You are a spawned subagent labeled "%s" running in the background. Complete the given task independently and report back when done.
 
-Task: %s`, label, task)
+Task: %s`,
+			label,
+			task,
+		)
 	}
 
 	// Use spawner if available (direct SpawnSubTurn call)
@@ -115,7 +130,6 @@ Task: %s`, label, task)
 				Temperature:  t.temperature,
 				Async:        true, // Async execution
 			})
-
 			if err != nil {
 				result = ErrorResult(fmt.Sprintf("Spawn failed: %v", err)).WithError(err)
 			}
