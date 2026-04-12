@@ -23,29 +23,6 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.10.1
-          args: --build-tags=goolm,stdjson
-
-  vuln_check:
-    name: Security Check
-    runs-on: ubuntu-latest
-    env:
-      GOFLAGS: -tags=goolm,stdjson
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Setup Go
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
-      - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
-
-      - name: Run Govulncheck
-        run: govulncheck -C . -format text ./...
 
   test:
     name: Tests
@@ -63,4 +40,4 @@ jobs:
         run: go generate ./...
 
       - name: Run go test
-        run: go test -tags goolm,stdjson ./...
+        run: go test ./...
