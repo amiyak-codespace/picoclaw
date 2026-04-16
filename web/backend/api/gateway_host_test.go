@@ -185,8 +185,8 @@ func TestBuildWsURLUsesWSSWhenForwardedProtoIsHTTPS(t *testing.T) {
 	req.Host = "chat.example.com"
 	req.Header.Set("X-Forwarded-Proto", "https")
 
-	if got := h.buildWsURL(req); got != "wss://chat.example.com:18800/pico/ws" {
-		t.Fatalf("buildWsURL() = %q, want %q", got, "wss://chat.example.com:18800/pico/ws")
+	if got := h.buildWsURL(req); got != "wss://chat.example.com:443/pico/ws" {
+		t.Fatalf("buildWsURL() = %q, want %q", got, "wss://chat.example.com:443/pico/ws")
 	}
 }
 
@@ -202,8 +202,8 @@ func TestBuildWsURLUsesWSSWhenRequestIsTLS(t *testing.T) {
 	req.Host = "secure.example.com"
 	req.TLS = &tls.ConnectionState{}
 
-	if got := h.buildWsURL(req); got != "wss://secure.example.com:18800/pico/ws" {
-		t.Fatalf("buildWsURL() = %q, want %q", got, "wss://secure.example.com:18800/pico/ws")
+	if got := h.buildWsURL(req); got != "wss://secure.example.com:443/pico/ws" {
+		t.Fatalf("buildWsURL() = %q, want %q", got, "wss://secure.example.com:443/pico/ws")
 	}
 }
 
@@ -254,8 +254,25 @@ func TestBuildWsURLPrefersForwardedHTTPOverTLS(t *testing.T) {
 	req.TLS = &tls.ConnectionState{}
 	req.Header.Set("X-Forwarded-Proto", "http")
 
-	if got := h.buildWsURL(req); got != "ws://chat.example.com:18800/pico/ws" {
-		t.Fatalf("buildWsURL() = %q, want %q", got, "ws://chat.example.com:18800/pico/ws")
+	if got := h.buildWsURL(req); got != "ws://chat.example.com:80/pico/ws" {
+		t.Fatalf("buildWsURL() = %q, want %q", got, "ws://chat.example.com:80/pico/ws")
+	}
+}
+
+func TestBuildWsURLDoesNotTrustOriginWhenProxyOmitsForwardedProto(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	h := NewHandler(configPath)
+
+	req := httptest.NewRequest("GET", "http://launcher.local/api/pico/info", nil)
+	req.Host = "fs-952210-xwj.picoclaw.lan.sipeed.com"
+	req.Header.Set("Origin", "https://fs-952210-xwj.picoclaw.lan.sipeed.com")
+
+	if got := h.buildWsURL(req); got != "ws://fs-952210-xwj.picoclaw.lan.sipeed.com:80/pico/ws" {
+		t.Fatalf(
+			"buildWsURL() = %q, want %q",
+			got,
+			"ws://fs-952210-xwj.picoclaw.lan.sipeed.com:80/pico/ws",
+		)
 	}
 }
 

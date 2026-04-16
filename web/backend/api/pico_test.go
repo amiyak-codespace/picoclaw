@@ -756,6 +756,33 @@ func TestHandleWebSocketProxyRejectsInvalidOrigin(t *testing.T) {
 	}
 }
 
+func TestValidPicoProxyOriginAcceptsHTTPSOriginWithoutExplicitPort(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	h := NewHandler(configPath)
+
+	req := httptest.NewRequest(http.MethodGet, "http://launcher.local/pico/ws", nil)
+	req.Host = "fs-952210-xwj.picoclaw.lan.sipeed.com"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	req.Header.Set("Origin", "https://fs-952210-xwj.picoclaw.lan.sipeed.com")
+
+	if !h.validPicoProxyOrigin(req) {
+		t.Fatal("validPicoProxyOrigin() = false, want true")
+	}
+}
+
+func TestValidPicoProxyOriginRejectsHTTPSOriginWhenProxyOmitsForwardedProto(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	h := NewHandler(configPath)
+
+	req := httptest.NewRequest(http.MethodGet, "http://launcher.local/pico/ws", nil)
+	req.Host = "fs-952210-xwj.picoclaw.lan.sipeed.com"
+	req.Header.Set("Origin", "https://fs-952210-xwj.picoclaw.lan.sipeed.com")
+
+	if h.validPicoProxyOrigin(req) {
+		t.Fatal("validPicoProxyOrigin() = true, want false")
+	}
+}
+
 func mustGatewayTestPort(t *testing.T, rawURL string) int {
 	t.Helper()
 
