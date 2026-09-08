@@ -1,0 +1,60 @@
+name: Upstream Sync PR
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/sipeed/picoclaw.git || true
+          git fetch upstream main
+
+      - name: Refresh upstream-sync branch
+        run: |
+          git checkout -B upstream-sync upstream/main
+          rm -rf .github/workflows
+          git checkout origin/main -- .github/workflows || true
+          git add -A
+          git commit -m "chore(sync): preserve private workflows" || true
+          git push origin upstream-sync --force
+
+      - name: Create or update PR to main
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_SYNC_TOKEN }}
+        run: |
+          STATUS=$(gh api repos/${GITHUB_REPOSITORY}/compare/main...upstream-sync -q '.status')
+          if [ "$STATUS" = "identical" ]; then
+            echo "No changes to sync."
+            exit 0
+          fi
+
+          PR_URL=$(gh pr list --repo "${GITHUB_REPOSITORY}" --base main --head upstream-sync --state open --json url -q '.[0].url')
+          if [ -z "$PR_URL" ]; then
+            gh pr create \
+              --repo "${GITHUB_REPOSITORY}" \
+              --base main \
+              --head upstream-sync \
+              --title "chore(sync): upstream main -> private main" \
+              --body "Automated upstream sync PR from sipeed/picoclaw main."
+          else
+            echo "PR already open: $PR_URL"
+          fi
